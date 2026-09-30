@@ -12,7 +12,7 @@ import java.util.UUID;
 @Getter
 public class WatchList {
     private UUID id;
-    private UUID userId;
+    private Long userId;
     private String name;
     private Instant createdAt;
     private Instant updatedAt;

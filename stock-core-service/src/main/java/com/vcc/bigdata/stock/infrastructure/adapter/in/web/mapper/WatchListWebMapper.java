@@ -4,6 +4,8 @@ import com.vcc.bigdata.stock.application.command.CreateWatchListCommand;
 import com.vcc.bigdata.stock.application.command.CreateWatchListItemsCommand;
 import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.request.CreateWatchListItemsRequest;
 import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.request.CreateWatchListRequest;
+import com.vcc.bigdata.stock.domain.model.watchlist.WatchList;
+import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.response.WatchListResponse;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -28,5 +30,18 @@ public class WatchListWebMapper {
                 request.getSymbol(),
                 request.getIsPinned()
         );
+    }
+
+    public WatchListResponse toResponse(WatchList watchList) {
+        if (watchList == null) {
+            return null;
+        }
+        WatchListResponse response = new WatchListResponse();
+        response.setId(watchList.getId());
+        response.setUserId(watchList.getUserId());
+        response.setName(watchList.getName());
+        response.setCreatedAt(watchList.getCreatedAt());
+        response.setUpdatedAt(watchList.getUpdatedAt());
+        return response;
     }
 }

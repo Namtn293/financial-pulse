@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "watch_list")
+@Table(name = "watch_list_item")
 @Getter
 @Builder
 @NoArgsConstructor

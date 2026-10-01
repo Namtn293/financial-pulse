@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Bỏ qua file properties chứa secret/local
+**/application-local.properties
+**/application-secret.properties
+*.properties

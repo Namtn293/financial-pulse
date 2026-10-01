@@ -5,5 +5,5 @@ import java.util.List;
 public record CreateWatchListCommand (
    Long userId,
    String name,
-   List<CreateWatchListItemsCommand> items
+   List<CreateWatchListItemCommand> items
 ) {}

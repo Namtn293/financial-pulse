@@ -1,47 +1,34 @@
 package com.vcc.bigdata.stock.infrastructure.adapter.in.web.mapper;
 
 import com.vcc.bigdata.stock.application.command.CreateWatchListCommand;
-import com.vcc.bigdata.stock.application.command.CreateWatchListItemsCommand;
-import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.request.CreateWatchListItemsRequest;
-import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.request.CreateWatchListRequest;
+import com.vcc.bigdata.stock.application.command.CreateWatchListItemCommand;
 import com.vcc.bigdata.stock.domain.model.watchlist.WatchList;
+import com.vcc.bigdata.stock.domain.model.watchlist.WatchListItem;
+import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.request.CreateWatchListItemRequest;
+import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.request.CreateWatchListRequest;
+import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.response.WatchListItemResponse;
 import com.vcc.bigdata.stock.infrastructure.adapter.in.web.dto.response.WatchListResponse;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.NullValueMappingStrategy;
 
-import java.util.Collections;
 import java.util.List;
 
-@Component
-public class WatchListWebMapper {
+@Mapper(componentModel = "spring", nullValueIterableMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
+public interface WatchListWebMapper {
 
-    public CreateWatchListCommand toCommand(CreateWatchListRequest request, Long userId){
-        List<CreateWatchListItemsCommand> list = request.getWatchListItemsRequests() == null
-                ? Collections.emptyList()
-                : request.getWatchListItemsRequests().stream()
-                  .map(this::toItemCommand).toList();
+    @Mapping(target = "userId", source = "userId")
+    @Mapping(target = "name", source = "request.name")
+    @Mapping(target = "items", source = "request.watchListItemsRequests")
+    CreateWatchListCommand toCommand(CreateWatchListRequest request, Long userId);
 
-        return new CreateWatchListCommand(userId, request.getName(), list);
-    }
+    CreateWatchListItemCommand toItemCommand(CreateWatchListItemRequest request);
 
-    public CreateWatchListItemsCommand toItemCommand(CreateWatchListItemsRequest request) {
-        if (request == null) return null;
-        return new CreateWatchListItemsCommand(
-                request.getNote(),
-                request.getSymbol(),
-                request.getIsPinned()
-        );
-    }
+    WatchListResponse toResponse(WatchList watchList);
 
-    public WatchListResponse toResponse(WatchList watchList) {
-        if (watchList == null) {
-            return null;
-        }
-        WatchListResponse response = new WatchListResponse();
-        response.setId(watchList.getId());
-        response.setUserId(watchList.getUserId());
-        response.setName(watchList.getName());
-        response.setCreatedAt(watchList.getCreatedAt());
-        response.setUpdatedAt(watchList.getUpdatedAt());
-        return response;
-    }
+    List<WatchListResponse> toResponses(List<WatchList> watchLists);
+
+    WatchListItemResponse toItemResponse(WatchListItem watchListItem);
+
+    List<WatchListItemResponse> toItemResponses(List<WatchListItem> watchListItems);
 }

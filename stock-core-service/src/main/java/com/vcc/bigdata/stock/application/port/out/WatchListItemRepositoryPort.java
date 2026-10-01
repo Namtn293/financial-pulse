@@ -4,6 +4,8 @@ import com.vcc.bigdata.stock.domain.model.watchlist.WatchListItem;
 
 import java.util.List;
 
-public interface WatchListItemsRepositoryPort {
+public interface WatchListItemRepositoryPort {
     void saveAll(List<WatchListItem> watchListItems);
+
+    WatchListItem save(WatchListItem watchListItem);
 }

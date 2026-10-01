@@ -16,11 +16,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/watch-list")
@@ -37,8 +35,7 @@ public class WatchListController {
             @Parameter(name = "X-User-Id", in = ParameterIn.HEADER, description = "User ID", required = true, example = "1001")
             @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
             @Valid @RequestBody CreateWatchListRequest request) {
-        Long currentUserId = UserContext.getCurrentUserId()
-                .orElseThrow(() -> new IllegalArgumentException("Missing or invalid user context."));
+        Long currentUserId = getCurrentUserId();
 
         CreateWatchListCommand command = watchListWebMapper.toCommand(request, currentUserId);
         WatchList created = watchListUseCase.createWatchList(command);
@@ -46,6 +43,26 @@ public class WatchListController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response, "Watchlist created successfully"));
+    }
+
+    @PostMapping("/watch-lists")
+    @Operation(summary = "Get watchlist by user-id")
+    public ResponseEntity<ApiResponse<List<WatchListResponse>>> getWatchLists(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestParam(value = "page", required = false, defaultValue = "1") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") int size) {
+        Long currentUserId = getCurrentUserId();
+        List<WatchList> watchLists = watchListUseCase.getWatchLists(currentUserId, page, size);
+
+        List<WatchListResponse> watchListResponses = watchListWebMapper.toResponses(watchLists);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.ok(watchListResponses, "Watchlists get successfully"));
+    }
+
+    private Long getCurrentUserId(){
+        return UserContext.getCurrentUserId().orElseThrow(
+                () -> new IllegalArgumentException("Missing or invalid user context.")
+        );
     }
 }
 

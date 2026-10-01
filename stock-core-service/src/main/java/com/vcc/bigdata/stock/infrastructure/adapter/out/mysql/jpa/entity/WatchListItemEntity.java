@@ -15,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
-public class WatchListItemsEntity {
+public class WatchListItemEntity {
     @Id
     @Column(name = "id", columnDefinition = "BINARY(16)", nullable = false)
     private UUID id;

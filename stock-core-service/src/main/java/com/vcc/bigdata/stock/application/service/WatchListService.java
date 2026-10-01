@@ -2,13 +2,15 @@ package com.vcc.bigdata.stock.application.service;
 
 import com.vcc.bigdata.stock.application.command.CreateWatchListCommand;
 import com.vcc.bigdata.stock.application.port.in.WatchListUseCase;
-import com.vcc.bigdata.stock.application.port.out.WatchListItemsRepositoryPort;
+import com.vcc.bigdata.stock.application.port.out.WatchListItemRepositoryPort;
 import com.vcc.bigdata.stock.application.port.out.WatchListRepositoryPort;
 import com.vcc.bigdata.stock.domain.model.watchlist.WatchList;
 import com.vcc.bigdata.stock.domain.model.watchlist.WatchListItem;
 import com.vcc.bigdata.stock.util.UuidUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +26,7 @@ import java.util.UUID;
 public class WatchListService implements WatchListUseCase {
 
     private final WatchListRepositoryPort watchListRepositoryPort;
-    private final WatchListItemsRepositoryPort watchListItemsRepositoryPort;
+    private final WatchListItemRepositoryPort watchListItemRepositoryPort;
 
     @Override
     @Transactional
@@ -57,14 +59,18 @@ public class WatchListService implements WatchListUseCase {
                 .id(watchlistId)
                 .userId(createWatchListCommand.userId())
                 .name(createWatchListCommand.name())
-                .createdAt(now)
-                .updatedAt(now)
                 .build();
 
-        watchListRepositoryPort.save(watchList);
-        watchListItemsRepositoryPort.saveAll(watchListItems);
+        WatchList list = watchListRepositoryPort.save(watchList);
+        watchListItemRepositoryPort.saveAll(watchListItems);
 
-        return watchList;
+        return list;
+    }
+
+    @Override
+    public List<WatchList> getWatchLists(Long userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        return watchListRepositoryPort.getWatchLists(userId, pageable);
     }
 }
 

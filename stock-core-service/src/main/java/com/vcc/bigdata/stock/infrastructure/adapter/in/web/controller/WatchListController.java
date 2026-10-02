@@ -45,7 +45,7 @@ public class WatchListController {
                 .body(ApiResponse.ok(response, "Watchlist created successfully"));
     }
 
-    @PostMapping("/watch-lists")
+    @GetMapping("/watch-lists")
     @Operation(summary = "Get watchlist by user-id")
     public ResponseEntity<ApiResponse<List<WatchListResponse>>> getWatchLists(
             @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,

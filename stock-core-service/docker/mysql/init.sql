@@ -33,3 +33,15 @@ CREATE TABLE IF NOT EXISTS watch_list_item
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS shedlock
+(
+    name       VARCHAR(64)  NOT NULL,
+    lock_until TIMESTAMP(6) NOT NULL,
+    locked_at  TIMESTAMP(6) NOT NULL,
+    locked_by  VARCHAR(255) NOT NULL,
+    PRIMARY KEY (name)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+

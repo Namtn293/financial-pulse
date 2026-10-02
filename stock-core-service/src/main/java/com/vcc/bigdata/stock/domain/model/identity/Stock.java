@@ -28,4 +28,13 @@ public class Stock {
     private BigDecimal ma50;
     private Long avgVolume20d;
     private Instant updatedAt;
+
+    @Override
+    public String toString() {
+        return "Stock{" +
+                "symbol='" + symbol + '\'' +
+                ", companyName='" + companyName + '\'' +
+                ", exchange='" + exchange + '\'' +
+                '}';
+    }
 }

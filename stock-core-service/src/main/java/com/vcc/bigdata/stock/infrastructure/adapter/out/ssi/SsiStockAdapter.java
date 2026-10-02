@@ -1,16 +1,23 @@
 package com.vcc.bigdata.stock.infrastructure.adapter.out.ssi;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vcc.bigdata.stock.application.port.out.SsiStockPort;
+import com.vcc.bigdata.stock.domain.model.identity.Stock;
+import com.vcc.bigdata.stock.infrastructure.adapter.out.ssi.dto.SsiApiResponse;
+import com.vcc.bigdata.stock.infrastructure.adapter.out.ssi.dto.StockDataSsiResponse;
+import com.vcc.bigdata.stock.infrastructure.adapter.out.ssi.mapper.StockSsiMapper;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+
+import java.util.Collections;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Component
@@ -18,30 +25,32 @@ import org.springframework.web.client.RestClient;
 public class SsiStockAdapter implements SsiStockPort {
 
     private final RestClient restClient;
-    private final ObjectMapper objectMapper;
+    private final StockSsiMapper stockSsiMapper;
 
     @Value("${app.ssi.api.symbols-url:https://iboard-query.ssi.com.vn/stock/exchange/hose}")
     private String ssiSymbolsUrl;
 
     @Override
-    @Retry(name = "stockApiRetry")
-    @RateLimiter(name = "stockApiLimiter", fallbackMethod = "fetchSymbolInfoFallback")
-    public String fetchSymbolInfo() {
+    @Retry(name = "stockApiRetry", fallbackMethod = "fetchSymbolInfoFallback")
+    @RateLimiter(name = "stockApiLimiter")
+    public List<Stock> fetchSymbolInfo() {
         log.info("Start calling to ssi");
 
-        String rawResponse = restClient.get()
+        SsiApiResponse<StockDataSsiResponse> symbolInfos = restClient.get()
                 .uri(ssiSymbolsUrl)
                 .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .header(HttpHeaders.REFERER, "https://iboard.ssi.com.vn/")
+                .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
                 .retrieve()
-                .body(String.class);
-        try {
-            Object json = objectMapper.readValue(rawResponse, Object.class);
-            String prettyJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
-            System.out.println(prettyJson);
-        } catch (Exception e) {
-            log.warn("Can't fetch data from ssi {}", e.getMessage());
-        }
-        return null;
+                .body(new ParameterizedTypeReference<>() {});
+
+        return (symbolInfos != null && symbolInfos.data() != null)
+                ? symbolInfos.data().stream().map(stockSsiMapper::toDomain).toList()
+                : Collections.emptyList();
+    }
+
+    public List<Stock> fetchSymbolInfoFallback(Throwable throwable) {
+        log.error("Exhausted all retries fetching symbols from SSI. Error: {}", throwable.getMessage());
+        return Collections.emptyList();
     }
 }

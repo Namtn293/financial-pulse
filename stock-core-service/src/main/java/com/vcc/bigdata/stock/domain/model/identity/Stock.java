@@ -1,5 +1,6 @@
 package com.vcc.bigdata.stock.domain.model.identity;
 
+import com.vcc.bigdata.stock.util.StockHashUtils;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ public class Stock {
     private BigDecimal ma50;
     private Long avgVolume20d;
     private Instant updatedAt;
+    private String hashData;
 
     @Override
     public String toString() {
@@ -36,5 +38,9 @@ public class Stock {
                 ", companyName='" + companyName + '\'' +
                 ", exchange='" + exchange + '\'' +
                 '}';
+    }
+
+    public void toHashData() {
+        this.hashData = StockHashUtils.hashStock(this.getSymbol(), this.getCompanyName(), this.getExchange());
     }
 }

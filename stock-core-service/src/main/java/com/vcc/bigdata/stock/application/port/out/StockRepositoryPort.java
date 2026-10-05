@@ -6,4 +6,8 @@ import java.util.List;
 
 public interface StockRepositoryPort {
     int saveAll(List<Stock> stocks);
+
+    int saveAllStockSsi(List<Stock> stocks);
+
+    java.util.Map<String, String> getAllSymbolHashes();
 }

@@ -45,3 +45,32 @@ CREATE TABLE IF NOT EXISTS shedlock
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS stock
+(
+    symbol             VARCHAR(20)   NOT NULL COMMENT 'Stock symbol / ticker code (Primary Key)',
+    company_name       VARCHAR(255)  NOT NULL COMMENT 'Full company name',
+    exchange           VARCHAR(10)   NOT NULL COMMENT 'Stock exchange (HOSE, HNX, UPCOM)',
+    industry           VARCHAR(100)  DEFAULT NULL COMMENT 'Industry / Sector',
+    ceo_name           VARCHAR(100)  DEFAULT NULL COMMENT 'CEO name',
+    established_year   INT           DEFAULT NULL COMMENT 'Established year',
+    website            VARCHAR(255)  DEFAULT NULL COMMENT 'Company website',
+    overview_summary   TEXT          DEFAULT NULL COMMENT 'Company overview summary',
+    shares_outstanding BIGINT        DEFAULT NULL COMMENT 'Shares outstanding',
+    pe                 DECIMAL(10,2) DEFAULT NULL COMMENT 'Price to Earnings ratio',
+    pb                 DECIMAL(10,2) DEFAULT NULL COMMENT 'Price to Book ratio',
+    roe                DECIMAL(10,2) DEFAULT NULL COMMENT 'Return on Equity (%)',
+    rsi_14             DECIMAL(10,2) DEFAULT NULL COMMENT 'Relative Strength Index 14',
+    ma_20              DECIMAL(15,2) DEFAULT NULL COMMENT 'Moving Average 20',
+    ma_50              DECIMAL(15,2) DEFAULT NULL COMMENT 'Moving Average 50',
+    avg_volume_20d     BIGINT        DEFAULT NULL COMMENT 'Average 20-day trading volume',
+    hash_data          VARCHAR(64)   DEFAULT NULL COMMENT 'MD5 hash for change detection',
+    created_at         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (symbol),
+    KEY idx_stock_exchange (exchange),
+    KEY idx_stock_industry (industry)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci;
+
+

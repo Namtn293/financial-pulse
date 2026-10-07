@@ -4,6 +4,7 @@ import com.vcc.bigdata.stock.application.dto.SyncStockResult;
 import com.vcc.bigdata.stock.application.port.in.StockUseCase;
 import com.vcc.bigdata.stock.application.port.out.SsiStockPort;
 import com.vcc.bigdata.stock.application.port.out.StockCachePort;
+import com.vcc.bigdata.stock.application.port.out.StockKafkaPort;
 import com.vcc.bigdata.stock.application.port.out.StockRepositoryPort;
 import com.vcc.bigdata.stock.domain.model.identity.Stock;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class StockService implements StockUseCase {
     private final SsiStockPort ssiStockPort;
     private final StockCachePort stockCachePort;
     private final StockRepositoryPort stockRepositoryPort;
+    private final StockKafkaPort stockKafkaPort;
 
     @Override
     public SyncStockResult sync() {
@@ -48,6 +50,7 @@ public class StockService implements StockUseCase {
         if (!changedStocks.isEmpty()) {
             stockRepositoryPort.saveAllStockSsi(changedStocks);
             stockCachePort.saveAll(changedStocks);
+            stockKafkaPort.publishUpdatedStock(newSymbols);
             log.info("Synced {} changed stocks ({} new).", changedStocks.size(), newSymbols.size());
         }
 

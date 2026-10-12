@@ -9,6 +9,9 @@ import java.util.List;
 public class KafkaStockAdapter implements StockKafkaPort {
     @Override
     public void publishUpdatedStock(List<String> symbols) {
+        if (symbols == null || symbols.isEmpty()){
+            throw new IllegalArgumentException("Symbols partition key must not be null or empty!");
+        }
 
     }
 }

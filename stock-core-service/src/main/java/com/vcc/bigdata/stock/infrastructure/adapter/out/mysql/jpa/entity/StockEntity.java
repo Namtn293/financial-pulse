@@ -5,7 +5,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -37,14 +36,8 @@ public class StockEntity {
     @Column(name = "industry", length = 100)
     private String industry;
 
-    @Column(name = "ceo_name", length = 100)
-    private String ceoName;
-
     @Column(name = "established_year")
     private Integer establishedYear;
-
-    @Column(name = "website", length = 255)
-    private String website;
 
     @Column(name = "overview_summary", columnDefinition = "TEXT")
     private String overviewSummary;
@@ -52,29 +45,11 @@ public class StockEntity {
     @Column(name = "shares_outstanding")
     private Long sharesOutstanding;
 
-    @Column(name = "pe", precision = 10, scale = 2)
-    private BigDecimal pe;
-
-    @Column(name = "pb", precision = 10, scale = 2)
-    private BigDecimal pb;
-
-    @Column(name = "roe", precision = 10, scale = 2)
-    private BigDecimal roe;
-
-    @Column(name = "rsi_14", precision = 10, scale = 2)
-    private BigDecimal rsi14;
-
-    @Column(name = "ma_20", precision = 15, scale = 2)
-    private BigDecimal ma20;
-
-    @Column(name = "ma_50", precision = 15, scale = 2)
-    private BigDecimal ma50;
-
-    @Column(name = "avg_volume_20d")
-    private Long avgVolume20d;
-
     @Column(name = "hash_data", length = 64)
     private String hashData;
+
+    @Column(name = "vietcad_hash_data", length = 64)
+    private String vietcadHashData;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

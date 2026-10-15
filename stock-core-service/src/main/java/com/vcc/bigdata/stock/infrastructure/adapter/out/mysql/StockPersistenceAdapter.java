@@ -90,39 +90,23 @@ public class StockPersistenceAdapter implements StockRepositoryPort {
                 company_name,
                 exchange,
                 industry,
-                ceo_name,
                 established_year,
-                website,
                 overview_summary,
                 shares_outstanding,
-                pe,
-                pb,
-                roe,
-                rsi_14,
-                ma_20,
-                ma_50,
-                avg_volume_20d,
                 hash_data,
+                vietcad_hash_data,
                 created_at,
                 updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
             ON DUPLICATE KEY UPDATE
                 company_name       = VALUES(company_name),
                 exchange           = VALUES(exchange),
                 industry           = VALUES(industry),
-                ceo_name           = VALUES(ceo_name),
                 established_year   = VALUES(established_year),
-                website            = VALUES(website),
                 overview_summary   = VALUES(overview_summary),
                 shares_outstanding = VALUES(shares_outstanding),
-                pe                 = VALUES(pe),
-                pb                 = VALUES(pb),
-                roe                = VALUES(roe),
-                rsi_14             = VALUES(rsi_14),
-                ma_20              = VALUES(ma_20),
-                ma_50              = VALUES(ma_50),
-                avg_volume_20d     = VALUES(avg_volume_20d),
                 hash_data          = VALUES(hash_data),
+                vietcad_hash_data  = VALUES(vietcad_hash_data),
                 updated_at         = NOW()
             """;
 
@@ -138,37 +122,23 @@ public class StockPersistenceAdapter implements StockRepositoryPort {
                     ps.setString(2, stock.getCompanyName());
                     ps.setString(3, stock.getExchange());
                     ps.setString(4, stock.getIndustry());
-                    ps.setString(5, stock.getCeoName());
 
                     if (stock.getEstablishedYear() != null) {
-                        ps.setInt(6, stock.getEstablishedYear());
+                        ps.setInt(5, stock.getEstablishedYear());
                     } else {
-                        ps.setNull(6, Types.INTEGER);
+                        ps.setNull(5, Types.INTEGER);
                     }
 
-                    ps.setString(7, stock.getWebsite());
-                    ps.setString(8, stock.getOverviewSummary());
+                    ps.setString(6, stock.getOverviewSummary());
 
                     if (stock.getSharesOutstanding() != null) {
-                        ps.setLong(9, stock.getSharesOutstanding());
+                        ps.setLong(7, stock.getSharesOutstanding());
                     } else {
-                        ps.setNull(9, Types.BIGINT);
+                        ps.setNull(7, Types.BIGINT);
                     }
 
-                    ps.setBigDecimal(10, stock.getPe());
-                    ps.setBigDecimal(11, stock.getPb());
-                    ps.setBigDecimal(12, stock.getRoe());
-                    ps.setBigDecimal(13, stock.getRsi14());
-                    ps.setBigDecimal(14, stock.getMa20());
-                    ps.setBigDecimal(15, stock.getMa50());
-
-                    if (stock.getAvgVolume20d() != null) {
-                        ps.setLong(16, stock.getAvgVolume20d());
-                    } else {
-                        ps.setNull(16, Types.BIGINT);
-                    }
-
-                    ps.setString(17, stock.getHashData());
+                    ps.setString(8, stock.getHashData());
+                    ps.setString(9, stock.getVietcadHashData());
                 }
 
                 @Override

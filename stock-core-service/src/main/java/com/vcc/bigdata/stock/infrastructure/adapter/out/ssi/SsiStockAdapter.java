@@ -44,6 +44,8 @@ public class SsiStockAdapter implements SsiStockPort {
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {});
 
+        log.info("Total fetch data={}", (symbolInfos != null && symbolInfos.data() != null && !symbolInfos.data().isEmpty()) ? symbolInfos.data().size() : 0L);
+
         return (symbolInfos != null && symbolInfos.data() != null)
                 ? symbolInfos.data().stream().map(stockSsiMapper::toDomain).toList()
                 : Collections.emptyList();

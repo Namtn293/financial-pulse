@@ -5,7 +5,7 @@ import com.vcc.bigdata.stock.application.port.in.WatchListItemUseCase;
 import com.vcc.bigdata.stock.application.port.out.WatchListItemRepositoryPort;
 import com.vcc.bigdata.stock.application.port.out.WatchListRepositoryPort;
 import com.vcc.bigdata.stock.domain.model.watchlist.WatchListItem;
-import com.vcc.bigdata.stock.util.UuidUtils;
+import com.vcc.bigdata.stock.infrastructure.util.UuidUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;

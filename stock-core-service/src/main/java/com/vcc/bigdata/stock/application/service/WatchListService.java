@@ -6,7 +6,7 @@ import com.vcc.bigdata.stock.application.port.out.WatchListItemRepositoryPort;
 import com.vcc.bigdata.stock.application.port.out.WatchListRepositoryPort;
 import com.vcc.bigdata.stock.domain.model.watchlist.WatchList;
 import com.vcc.bigdata.stock.domain.model.watchlist.WatchListItem;
-import com.vcc.bigdata.stock.util.UuidUtils;
+import com.vcc.bigdata.stock.infrastructure.util.UuidUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;

@@ -1,6 +1,6 @@
 package com.vcc.bigdata.stock.infrastructure.adapter.out.kafka.model;
 
-import com.vcc.bigdata.stock.util.UuidUtils;
+import com.vcc.bigdata.stock.infrastructure.util.UuidUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,7 +23,8 @@ public class EventEnvelope<T> {
 
     private String traceId;
 
-    private String key;
+    @Builder.Default
+    private String key = null;
 
-    private String payload;
+    private T payload;
 }

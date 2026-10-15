@@ -1,8 +1,7 @@
-package com.vcc.bigdata.stock.util;
+package com.vcc.bigdata.stock.infrastructure.util;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import lombok.experimental.UtilityClass;
-import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;

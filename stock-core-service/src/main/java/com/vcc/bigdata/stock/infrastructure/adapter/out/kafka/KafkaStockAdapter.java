@@ -30,49 +30,58 @@ public class KafkaStockAdapter implements StockKafkaPort {
     @Override
     @Async
     public void publishUpdatedStock(List<String> symbols) {
-        if (symbols == null || symbols.isEmpty()){
-            throw new IllegalArgumentException("Symbols partition key must not be null or empty!");
-        }
-
-        String currentTraceId = MDC.get("traceId") != null ? MDC.get("traceId") : UuidUtils.generateUuidV7().toString();
-        EventEnvelope<Object> eventEnvelope = EventEnvelope.builder()
-                .source("stock-core-service")
-                .eventType("STOCKS_INFO_UPDATE")
-                .traceId(currentTraceId)
-                .payload(symbols)
-                .build();
-
-        ProducerRecord<String, Object> record = new ProducerRecord<>(
-                stockUpdateTopic,
-                eventEnvelope
-        );
-
-        record.headers().add(new RecordHeader("X-Event-Type", "UPDATE/CREATE".getBytes(StandardCharsets.UTF_8)));
-        record.headers().add(new RecordHeader("X-Origin", "Stock-core-service".getBytes(StandardCharsets.UTF_8)));
-
-        long startTime = System.currentTimeMillis();
-
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(record);
-
-        future.whenComplete((result, ex) -> {
-            long duration = System.currentTimeMillis() - startTime;
-
-            if (ex == null) {
-                log.info("Kafka publish SUCCESS: symbol={}, topic={}, partition={}, offset={}, timeTaken={}",
-                        symbols,
-                        result.getRecordMetadata().topic(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset(),
-                        duration);
-            } else {
-                log.error("Kafka publish FAILED: symbol={}, error={}, timeTaken={}ms",
-                        symbols, ex.getMessage(), duration, ex);
-                handleStockUpdateFallback(symbols, eventEnvelope);
-            }
-        });
+        publishEvents("STOCK_UPDATED", symbols);
     }
 
-    private void handleStockUpdateFallback(List<String> symbols, EventEnvelope<?> eventEnvelope) {
-        log.warn("Triggering Fallback Storage for symbol={}", symbols);
+    @Override
+    @Async
+    public void publishCreatedStock(List<String> symbols) {
+        publishEvents("STOCK_CREATED", symbols);
+    }
+
+    private void publishEvents(String eventType, List<String> symbols) {
+        if (symbols == null || symbols.isEmpty()) {
+            log.debug("No symbols to publish for eventType {}", eventType);
+            return;
+        }
+
+        String currentTraceId = MDC.get("traceId") != null
+                ? MDC.get("traceId")
+                : UuidUtils.generateUuidV7().toString();
+
+        for (String symbol : symbols) {
+            EventEnvelope<String> eventEnvelope = EventEnvelope.<String>builder()
+                    .source("stock-core-service")
+                    .eventType(eventType)
+                    .payload(symbol)
+                    .traceId(currentTraceId)
+                    .build();
+
+            ProducerRecord<String, Object> record = new ProducerRecord<>(
+                    stockUpdateTopic,
+                    symbol,
+                    eventEnvelope
+            );
+
+            record.headers().add(new RecordHeader("X-Event-Type", eventType.getBytes(StandardCharsets.UTF_8)));
+            record.headers().add(new RecordHeader("X-Origin", "stock-core-service".getBytes(StandardCharsets.UTF_8)));
+
+            long startTime = System.currentTimeMillis();
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(record);
+
+            future.whenComplete((result, ex) -> {
+               long duration = System.currentTimeMillis() - startTime;
+
+                if (ex == null) {
+                    log.info("Published event {} for symbol {} successfully. partition={}, offset={}, duration={}ms",
+                            eventType, symbol,
+                            result.getRecordMetadata().partition(),
+                            result.getRecordMetadata().offset(),
+                            duration);
+                } else {
+                    log.error("Failed to send Kafka message for symbol {} topic={}: {}", symbol, stockUpdateTopic, ex.getMessage(), ex);
+                }
+            });
+        }
     }
 }

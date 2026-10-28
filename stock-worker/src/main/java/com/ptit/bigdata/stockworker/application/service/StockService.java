@@ -1,8 +1,11 @@
 package com.ptit.bigdata.stockworker.application.service;
 
 import com.ptit.bigdata.stockworker.application.port.in.StockUseCase;
+import com.ptit.bigdata.stockworker.application.port.out.StockCachePort;
+import com.ptit.bigdata.stockworker.application.port.out.StockRepositoryPort;
 import com.ptit.bigdata.stockworker.application.port.out.StockVietCadPort;
 import com.ptit.bigdata.stockworker.domain.Stock;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +19,13 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class StockService implements StockUseCase {
     private final StockVietCadPort stockVietCadPort;
+    private final StockCachePort stockCachePort;
+    private final StockRepositoryPort stockRepositoryPort;
 
-    public StockService(StockVietCadPort stockVietCadPort) {
+    public StockService(StockRepositoryPort stockRepositoryPort, StockCachePort stockCachePort, StockVietCadPort stockVietCadPort) {
         this.stockVietCadPort = stockVietCadPort;
+        this.stockCachePort = stockCachePort;
+        this.stockRepositoryPort = stockRepositoryPort;
     }
 
     @Override
@@ -42,8 +49,11 @@ public class StockService implements StockUseCase {
                     .toList();
 
             log.info("Fetched {}/{} stocks successfully from VietCad", stocks.size(), symbols.size());
-            // check trong redis, lưu trong mysql -> xog
-            // thiếu xử lý các ngoại lệ
+
+            // because this is the new symbol adding so we don't must check redis
+
+            stockCachePort.saveAll(stocks);
+
         }
     }
 }

@@ -4,4 +4,6 @@ import java.util.List;
 
 public interface StockKafkaPort {
     void publishUpdatedStock(List<String> symbols);
+
+    void publishCreatedStock(List<String> symbols);
 }

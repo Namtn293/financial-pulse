@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,32 +28,48 @@ public class SsiStockAdapter implements SsiStockPort {
     private final RestClient restClient;
     private final StockSsiMapper stockSsiMapper;
 
-    @Value("${app.ssi.api.symbols-url:https://iboard-query.ssi.com.vn/stock/exchange/hose}")
-    private String ssiSymbolsUrl;
+    @Value("${app.ssi.api.base-url:https://iboard-query.ssi.com.vn/stock/exchange}")
+    private String ssiBaseUrl;
+
+    @Value("${app.ssi.api.exchange:hose,hnx,upcom}")
+    private List<String> exchanges;
 
     @Override
     @Retry(name = "stockApiRetry", fallbackMethod = "fetchSymbolInfoFallback")
     @RateLimiter(name = "stockApiLimiter")
     public List<Stock> fetchSymbolInfo() {
-        log.info("Start calling to ssi");
+        log.info("Starting to fetch stock symbols from SSI for exchanges: {}", exchanges);
+        List<Stock> allStocks = new ArrayList<>();
 
-        SsiApiResponse<StockDataSsiResponse> symbolInfos = restClient.get()
-                .uri(ssiSymbolsUrl)
-                .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .header(HttpHeaders.REFERER, "https://iboard.ssi.com.vn/")
-                .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+        for (String exchange : exchanges) {
+            String url = ssiBaseUrl + "/" + exchange.trim().toLowerCase();
+            try {
+                SsiApiResponse<StockDataSsiResponse> response = restClient.get()
+                        .uri(url)
+                        .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                        .header(HttpHeaders.REFERER, "https://iboard.ssi.com.vn/")
+                        .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<>() {});
 
-        log.info("Total fetch data={}", (symbolInfos != null && symbolInfos.data() != null && !symbolInfos.data().isEmpty()) ? symbolInfos.data().size() : 0L);
+                if (response != null && response.data() != null) {
+                    List<Stock> exchangeStocks = response.data().stream()
+                            .map(stockSsiMapper::toDomain)
+                            .toList();
+                    allStocks.addAll(exchangeStocks);
+                    log.info("Fetched {} symbols from exchange '{}'", exchangeStocks.size(), exchange);
+                }
+            } catch (Exception ex) {
+                log.error("Error fetching symbols for exchange '{}': {}", exchange, ex.getMessage());
+                throw ex;
+            }
+        }
 
-        return (symbolInfos != null && symbolInfos.data() != null)
-                ? symbolInfos.data().stream().map(stockSsiMapper::toDomain).toList()
-                : Collections.emptyList();
+        return allStocks;
     }
 
     public List<Stock> fetchSymbolInfoFallback(Throwable throwable) {
-        log.error("Exhausted all retries fetching symbols from SSI. Error: {}", throwable.getMessage());
-        return Collections.emptyList();
+        log.error("Exhausted all retries fetching symbols from SSI. Error: {}", throwable.getMessage(), throwable);
+        throw new RuntimeException("SSI API not response or interrupt: " + throwable.getMessage(), throwable);
     }
 }

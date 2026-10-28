@@ -7,7 +7,6 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface StockVietCapMapper {
-
     @Mapping(target = "industry", source = "sectorVn")
     @Mapping(target = "sharesOutstanding", source = "issueShare")
     @Mapping(target = "overviewSummary", source = "profile")

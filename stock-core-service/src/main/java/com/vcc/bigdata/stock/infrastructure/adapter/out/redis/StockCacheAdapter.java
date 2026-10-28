@@ -22,6 +22,7 @@ public class StockCacheAdapter implements StockCachePort {
     private final StockRedisMapper mapper;
 
     private static final String KEY_PREFIX = "stock:profile:";
+    private static final String HASH_KEY = "stock:hashes";
     private static final String NULL_SENTINEL = "{__NULL__}";
     private static final int BATCH_SIZE = 500;
     private final ObjectMapper redisObjectMapper;
@@ -33,14 +34,23 @@ public class StockCacheAdapter implements StockCachePort {
         try {
             List<Stock> validStocks = stocks.stream()
                     .filter(stock -> stock != null
-                            && stock.getSymbol() != null
-                            && !stock.getSymbol().isBlank())
+                    && stock.getSymbol() != null
+                    && !stock.getSymbol().isBlank())
                     .toList();
 
-            for (int i=0; i<validStocks.size(); i+=BATCH_SIZE) {
-                List<Stock> batch = validStocks.subList(i, Math.min(i + BATCH_SIZE, validStocks.size()));
+            for (int i = 0; i < validStocks.size(); i+= BATCH_SIZE) {
+                List<Stock> batch = validStocks.subList(i, Math.min(i + BATCH_SIZE, validStocks.size()) - 1);
                 executePipelineBatch(batch);
             }
+
+            Map<String, String> hashBatch = new HashMap<>();
+            for (Stock stock : validStocks) {
+                if (stock.getSymbol() != null && stock.getHashData() != null) {
+                    hashBatch.put(stock.getSymbol().trim().toUpperCase(), stock.getHashData());
+                }
+            }
+            saveSymbolHashes(hashBatch);
+
         } catch (Exception e) {
             log.error("Error: not save stocks into redis with exception {}", e.getMessage());
         }
@@ -169,6 +179,18 @@ public class StockCacheAdapter implements StockCachePort {
             log.error("Error scanning keys from Redis: {}", e.getMessage(), e);
         }
         return results;
+    }
+
+    @Override
+    public void saveSymbolHashes(Map<String, String> symbolHashes) {
+        if (symbolHashes == null) return;
+
+        try {
+            stringRedisTemplate.opsForHash().putAll(HASH_KEY, symbolHashes);
+            log.info("Saved {} symbol hashes into Redis key '{}'", symbolHashes.size(), HASH_KEY);
+        } catch (Exception e) {
+            log.error("Failed to save symbol hashes into Redis key {}: {}", HASH_KEY, e.getMessage());
+        }
     }
 
     private void fetchAndExtractHashes(List<String> keys, Map<String, String> results) {

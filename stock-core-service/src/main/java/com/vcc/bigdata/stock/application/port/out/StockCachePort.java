@@ -21,4 +21,6 @@ public interface StockCachePort {
     void deleteBySymbol(String symbol);
 
     Map<String, String> getAllSymbolHashes();
+
+    void saveSymbolHashes(Map<String, String> symbolHashes);
 }

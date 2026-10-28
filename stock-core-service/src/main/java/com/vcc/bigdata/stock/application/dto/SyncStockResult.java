@@ -5,5 +5,6 @@ import java.util.List;
 public record SyncStockResult (
         int totalFetched,
         int totalChanged,
-        List<String> newSymbols
+        List<String> newSymbols,
+        List<String> updatedSymbols
 ) {}

@@ -27,42 +27,51 @@ public class StockService implements StockUseCase {
     public SyncStockResult sync() {
         List<Stock> stocks = ssiStockPort.fetchSymbolInfo();
         if (stocks == null || stocks.isEmpty()) {
-            return new SyncStockResult(0, 0, List.of());
+            log.warn("No stock data fetched from SSI");
+            return new SyncStockResult(0, 0, List.of(), List.of());
         }
 
         Map<String, String> existingHashes = getExistingHashes();
+
         List<Stock> changedStocks = new ArrayList<>();
         List<String> newSymbols = new ArrayList<>();
+        List<String> updatedSymbols = new ArrayList<>();
 
         for (Stock stock : stocks) {
             if (stock == null || stock.getSymbol() == null) continue;
             stock.toHashData();
 
-            String oldHash = existingHashes.get(stock.getSymbol());
+            String symbol = stock.getSymbol().trim().toUpperCase();
+            String oldHash = existingHashes.get(symbol);
+
             if (oldHash == null) {
-                newSymbols.add(stock.getSymbol());
+                newSymbols.add(symbol);
                 changedStocks.add(stock);
             } else if (!oldHash.equals(stock.getHashData())) {
+                updatedSymbols.add(symbol);
                 changedStocks.add(stock);
+            }
+
+            if (!changedStocks.isEmpty()) {
+                stockRepositoryPort.saveAllStockSsi(changedStocks);
+
+                stockCachePort.saveAll(changedStocks);
+
+                if (!newSymbols.isEmpty()) {
+                    stockKafkaPort.publishCreatedStock(newSymbols);
+                }
+                if (!updatedSymbols.isEmpty()) {
+                    stockKafkaPort.publishUpdatedStock(updatedSymbols);
+                }
+                log.info("Synced successfully: {} total changed ({} new, {} updated).",
+                        changedStocks.size(), newSymbols.size(), updatedSymbols.size());
             }
         }
 
-        if (!changedStocks.isEmpty()) {
-            stockRepositoryPort.saveAllStockSsi(changedStocks);
-            stockCachePort.saveAll(changedStocks);
-            stockKafkaPort.publishUpdatedStock(newSymbols);
-            log.info("Synced {} changed stocks ({} new).", changedStocks.size(), newSymbols.size());
-        }
-
-        return new SyncStockResult(stocks.size(), changedStocks.size(), newSymbols);
+        return new SyncStockResult(stocks.size(), changedStocks.size(), newSymbols, updatedSymbols);
     }
 
     private Map<String, String> getExistingHashes() {
-        Map<String, String> cacheHashes = stockCachePort.getAllSymbolHashes();
-        if (cacheHashes != null && !cacheHashes.isEmpty()) {
-            return cacheHashes;
-        }
-        log.info("Redis cache is empty, falling back to database hashes...");
         Map<String, String> dbHashes = stockRepositoryPort.getAllSymbolHashes();
         return dbHashes != null ? dbHashes : Collections.emptyMap();
     }

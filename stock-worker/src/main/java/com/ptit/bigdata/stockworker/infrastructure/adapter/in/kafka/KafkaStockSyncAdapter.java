@@ -28,21 +28,32 @@ public class KafkaStockSyncAdapter {
             containerFactory = "singleKafkaListenerContainerFactory"
     )
     public void onMessage(
-            ConsumerRecord<String, EventEnvelope<?>> record,
+            ConsumerRecord<String, EventEnvelope<String>> record,
             Acknowledgment acknowledgment,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) int offset
     ) {
-        log.info("Received Kafka message: partition={}, offset={}, payload={}", partition, offset, record.value().getPayload().toString());
-        List<String> symbols = Arrays.stream(record.value().getPayload().toString()
-                .replace("[","")
-                .replace("]","").trim()
-                .split(", ")).toList();
+        EventEnvelope<String> envelope = record.value();
+        if (envelope == null || envelope.getPayload() == null) {
+            log.warn("Received empty Kafka record at partition={}, offset={}. Skipping.", partition, offset);
+            if (acknowledgment != null) acknowledgment.acknowledge();
+            return;
+        }
 
-//        stockUseCase.updateStock(symbols);
+        String symbol = envelope.getPayload().trim().toUpperCase();
+        log.info("Processing Kafka event '{}' from '{}', symbol={}, traceId={}, partition={}, offset={}",
+                envelope.getEventType(), envelope.getSource(), symbol, envelope.getTraceId(), partition, offset);
 
-        if (acknowledgment != null) {
-            acknowledgment.acknowledge();
+        try {
+            stockUseCase.updateStock(symbol);
+
+            if (acknowledgment != null) {
+                acknowledgment.acknowledge();
+            }
+        } catch (Exception ex) {
+            log.error("Failed to process Kafka stock sync event for symbol {} at partition={}, offset={}. Triggering Kafka retry! Error: {}",
+                    symbol, partition, offset, ex.getMessage());
+            throw ex;
         }
     }
 }

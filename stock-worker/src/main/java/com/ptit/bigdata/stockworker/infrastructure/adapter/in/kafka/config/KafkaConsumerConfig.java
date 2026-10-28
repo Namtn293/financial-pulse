@@ -1,6 +1,8 @@
 package com.ptit.bigdata.stockworker.infrastructure.adapter.in.kafka.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.CooperativeStickyAssignor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +22,7 @@ import java.util.Map;
 
 @Configuration
 @EnableKafka
+@Slf4j
 public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServer;
@@ -30,8 +33,8 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.consumer.concurrency}")
     private int concurrency;
 
-    @Value("${spring.kafka.consumer.max-pool-records}")
-    private int maxPoolRecords;
+    @Value("${spring.kafka.consumer.max-poll-records}")
+    private int maxPollRecords;
 
     @Value("${spring.kafka.consumer.max-poll-interval-ms}")
     private int maxPollIntervalMs;
@@ -55,10 +58,11 @@ public class KafkaConsumerConfig {
 
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
-        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, maxPoolRecords);
+        props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, maxPollRecords);
         props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollIntervalMs);
         props.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, sessionTimeoutMs);
         props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, heartbeatIntervalMs);
+        props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG, CooperativeStickyAssignor.class.getName());
 
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
@@ -81,11 +85,17 @@ public class KafkaConsumerConfig {
 
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
 
+        // Virtual Threads for Listener Task
         SimpleAsyncTaskExecutor executor = new SimpleAsyncTaskExecutor("kafka-listener-");
         executor.setVirtualThreads(true);
         factory.getContainerProperties().setListenerTaskExecutor(executor);
 
-        DefaultErrorHandler errorHandler = new DefaultErrorHandler(new FixedBackOff(1000L, 3L));
+        // ErrorHandler have clear warning for exhaust retries
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(
+                (record, exception) -> log.error("CRITICAL: Kafka sync event permanently failed for key={}, partition={}, offset={}. Cause: {}",
+                        record.key(), record.partition(), record.offset(), exception.getMessage()),
+                new FixedBackOff(2000L, 2L)
+        );
         factory.setCommonErrorHandler(errorHandler);
         return factory;
     }

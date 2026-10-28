@@ -11,6 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.RestClient;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,13 +39,12 @@ class VietCadStockAdapterTest {
     @Test
     void testGetDataFromVietCadFallback_rateLimitExceeded() {
         RequestNotPermitted ex = mock(RequestNotPermitted.class);
-        Stock result = adapter.getDataFromVietCadFallback("VNM", ex);
-        assertNull(result);
+        assertThrows(RuntimeException.class, () -> adapter.getDataFromVietCadFallback("VNM", ex));
     }
 
     @Test
     void testGetDataFromVietCadFallback_genericException() {
-        Stock result = adapter.getDataFromVietCadFallback("VNM", new RuntimeException("API down"));
-        assertNull(result);
+        assertThrows(RuntimeException.class, () ->
+                adapter.getDataFromVietCadFallback("VNM", new RuntimeException("API down")));
     }
 }

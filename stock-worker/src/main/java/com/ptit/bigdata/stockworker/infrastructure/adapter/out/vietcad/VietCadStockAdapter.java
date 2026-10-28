@@ -5,8 +5,9 @@ import com.ptit.bigdata.stockworker.domain.Stock;
 import com.ptit.bigdata.stockworker.infrastructure.adapter.out.vietcad.dto.StockDataVietCadResponse;
 import com.ptit.bigdata.stockworker.infrastructure.adapter.out.vietcad.dto.VietCadApiResponse;
 import com.ptit.bigdata.stockworker.infrastructure.adapter.out.vietcad.mapper.StockVietCapMapper;
-import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -32,6 +33,8 @@ public class VietCadStockAdapter implements StockVietCadPort {
 
     @Override
     @RateLimiter(name = "vietcad", fallbackMethod = "getDataFromVietCadFallback")
+    @Bulkhead(name = "vietcad", fallbackMethod = "getDataFromVietCadFallback")
+    @Retry(name = "vietcad", fallbackMethod = "getDataFromVietCadFallback")
     public Stock getDataFromVietCad(String symbol) {
         if (symbol == null || symbol.isBlank()) {
             return null;
@@ -59,16 +62,16 @@ public class VietCadStockAdapter implements StockVietCadPort {
             stock.toVietcadHashData();
             return stock;
         }
-        return null;
-    }
 
-    public Stock getDataFromVietCadFallback(String symbol, RequestNotPermitted ex) {
-        log.warn("Rate limit exceeded for VietCad API on symbol {}: {}", symbol, ex.getMessage());
-        return null;
+        log.warn("VietCap return empty profile for symbol {}. Marking as EMPTY", symbol);
+        Stock emptyStock = new Stock();
+        emptyStock.setSymbol(symbol.trim().toUpperCase());
+        emptyStock.setVietcadHashData("EMPTY");
+        return emptyStock;
     }
 
     public Stock getDataFromVietCadFallback(String symbol, Throwable ex) {
         log.error("Error fetching VietCad data for symbol {}: {}", symbol, ex.getMessage());
-        return null;
+        throw new RuntimeException("VietCad API failure for symbol "+symbol+" with exception "+ex.getMessage());
     }
 }

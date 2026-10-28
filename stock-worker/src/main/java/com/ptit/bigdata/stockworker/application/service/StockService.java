@@ -5,6 +5,7 @@ import com.ptit.bigdata.stockworker.application.port.out.StockCachePort;
 import com.ptit.bigdata.stockworker.application.port.out.StockRepositoryPort;
 import com.ptit.bigdata.stockworker.application.port.out.StockVietCadPort;
 import com.ptit.bigdata.stockworker.domain.Stock;
+import com.ptit.bigdata.stockworker.infrastructure.adapter.out.vietcad.VietCadStockAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,31 +30,20 @@ public class StockService implements StockUseCase {
     }
 
     @Override
-    public void updateStock(List<String> symbols) {
-        if (symbols == null || symbols.isEmpty()) {
-            log.warn("Symbols list is empty, skipping updateStock");
+    public void updateStock(String symbol) {
+        if (symbol == null || symbol.isBlank()) {
+            log.warn("Symbol is empty, skipping updateStock");
             return;
         }
 
-        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<CompletableFuture<Stock>> futures = symbols.stream()
-                    .map(symbol -> CompletableFuture.supplyAsync(
-                            () -> stockVietCadPort.getDataFromVietCad(symbol),
-                            executor
-                    ))
-                    .toList();
+        String cleanSymbol = symbol.trim().toUpperCase();
+        log.info("Fetching detailed profile for symbol {} from VietCad", cleanSymbol);
 
-            List<Stock> stocks = futures.stream()
-                    .map(CompletableFuture::join)
-                    .filter(Objects::nonNull)
-                    .toList();
+        Stock stock = stockVietCadPort.getDataFromVietCad(cleanSymbol);
 
-            log.info("Fetched {}/{} stocks successfully from VietCad", stocks.size(), symbols.size());
-
-            // because this is the new symbol adding so we don't must check redis
-
-            stockCachePort.saveAll(stocks);
-
+        if (stock != null) {
+            stockRepositoryPort.saveAll(List.of(stock));
+            log.info("Successfully updated symbol {} into MySQL", cleanSymbol);
         }
     }
 }
